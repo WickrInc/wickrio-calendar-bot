@@ -15,7 +15,7 @@
     "prompt": "^1.0.0",
     "validator": "^10.11.0",
     "wickrio_addon": "^5.12.6",
-    "wickrio-bot-api": "^1.0.0"
+    "wickrio-bot-api": "^1.0.1"
   },
   "scripts": {
     "start": "pm2 start processes.json --update-env",
