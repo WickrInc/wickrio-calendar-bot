@@ -45,7 +45,6 @@ var fieldDescriptions = [
 
 async function exitHandler(options, err) {
   try {
-    var wickrUsers = bot.getUsers();
     var closed = await bot.close();
     if (err || options.exit) {
       console.log('Exit reason:', err);
