@@ -134,9 +134,9 @@ async function inputTokens() {
       "value": process.argv[2],
       "encrypted": false
     };
-    newObjectResult.BOT_USERNAME = obj;
+    newObjectResult.WICKRIO_BOT_NAME = obj;
     for (var key in newObjectResult) {
-      if (key === 'BOT_USERNAME')
+      if (key === 'WICKRIO_BOT_NAME')
         continue;
       var obj = {
         "value": newObjectResult[key],
