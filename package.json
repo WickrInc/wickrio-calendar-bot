@@ -6,16 +6,16 @@
   "dependencies": {
     "cron": "^1.7.1",
     "crontab": "^1.2.0",
-    "express": "^4.16.4",
+    "express": "^4.17.1",
     "fs": "0.0.2",
-    "fuse.js": "^3.4.4",
-    "googleapis": "^40.0.0",
+    "fuse.js": "^3.4.5",
+    "googleapis": "^41.0.1",
     "moment": "^2.24.0",
-    "pm2": "^3.5.0",
+    "pm2": "^3.5.1",
     "prompt": "^1.0.0",
-    "validator": "^10.11.0",
-    "wickrio_addon": "^5.18.9",
-    "wickrio-bot-api": "^1.0.3"
+    "validator": "^11.1.0",
+    "wickrio_addon": "^5.28.3",
+    "wickrio-bot-api": "^1.0.6"
   },
   "scripts": {
     "start": "pm2 start processes.json --update-env",

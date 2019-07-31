@@ -104,7 +104,6 @@ return new Promise(async (resolve, reject) => {
     });
   }
   try {
-    //MAYBE change into a dynamic for loop
     if (tokens.GOOGLE_CALENDAR_CLIENT_ID.encrypted) {
       client_id = WickrIOAPI.cmdDecryptString(tokens.GOOGLE_CALENDAR_CLIENT_ID.value);
     } else {
@@ -387,7 +386,6 @@ function modifyEvent(auth, vGroupID, wickrUser, event) {
     resource: event,
   }, function(err, response) {
     if (err) {
-      //  var response = ", please try again later or contact your network administrator.";
       WickrIOAPI.cmdSendRoomMessage(vGroupID, 'Sorry, I was not able modify this Google Calendar event: ' + err);
       console.log('There was an error contacting the Calendar service: ' + err);
       return;
@@ -497,9 +495,8 @@ function listen(rMessage) {
         events: [],
         rooms: []
       });
-      bot.addUser(wickrUser);
+      user = bot.addUser(wickrUser);
     }
-    user = bot.getUser(userEmail);
     var current = user.index;
     user.current_vGroupID = vGroupID;
     if (command === '/list') {
