@@ -3,11 +3,7 @@ const prompt = require('prompt');
 const processes = require('./processes.json');
 const dataStringify = JSON.stringify(processes);
 const dataParsed = JSON.parse(dataStringify);
-const {
-  exec,
-  execSync,
-  execFileSync
-} = require('child_process');
+const {exec, execSync, execFileSync} = require('child_process');
 prompt.colors = false;
 
 process.stdin.resume(); //so the program will not close instantly
@@ -29,17 +25,11 @@ function exitHandler(options, err) {
 }
 
 //catches ctrl+c and stop.sh events
-process.on('SIGINT', exitHandler.bind(null, {
-  exit: true
-}));
+process.on('SIGINT', exitHandler.bind(null, {exit: true}));
 
 //catches "kill pid" (for example: nodemon restart)
-process.on('SIGUSR1', exitHandler.bind(null, {
-  pid: true
-}));
-process.on('SIGUSR2', exitHandler.bind(null, {
-  pid: true
-}));
+process.on('SIGUSR1', exitHandler.bind(null, {pid: true}));
+process.on('SIGUSR2', exitHandler.bind(null, {pid: true}));
 
 //catches uncaught exceptions
 process.on('uncaughtException', exitHandler.bind(null, {
@@ -50,16 +40,35 @@ process.on('uncaughtException', exitHandler.bind(null, {
 main();
 
 async function main() {
-  try {
-    var it = await inputTokens();
+  if (processConfigured()) {
+    try {
+      var cp = execSync('cp processes.json processes_backup.json');
+      if (dataParsed.apps[0].env.tokens.WICKRIO_BOT_NAME.value !== undefined) {
+        var newName = "WickrIO-Monitor-Bot_" + dataParsed.apps[0].env.tokens.WICKRIO_BOT_NAME.value;
+      } else {
+        var newName = "WickrIO-Monitor-Bot";
+      }
+      //var assign = Object.assign(dataParsed.apps[0].name, newName);
+      dataParsed.apps[0].name = newName;
+      var ps = fs.writeFileSync('./processes.json', JSON.stringify(dataParsed, null, 2));
+    } catch (err) {
+      console.log(err);
+    }
+    console.log("Already configured");
     process.exit();
-  } catch (err) {
-    console.log(err);
+  } else {
+    try {
+      var it = await inputTokens();
+      process.exit();
+      } catch (err) {
+      console.log(err);
+    }
   }
 }
 
 async function inputTokens() {
-  var tokens = ['DATABASE_ENCRYPTION_KEY', 'BOT_CLIENT_PORT', 'BOT_CLIENT_SERVER', 'GOOGLE_CALENDAR_CLIENT_ID', 'GOOGLE_CALENDAR_PROJECT_ID', 'GOOGLE_CALENDAR_CLIENT_SECRET'];
+  //Add any tokens(as strings separated by commas) you want to prompt for in the configuration process here
+  var tokens = ['WICKRIO_BOT_NAME', 'DATABASE_ENCRYPTION_KEY', 'BOT_CLIENT_PORT', 'BOT_CLIENT_SERVER', 'GOOGLE_CALENDAR_CLIENT_ID', 'GOOGLE_CALENDAR_PROJECT_ID', 'GOOGLE_CALENDAR_CLIENT_SECRET'];
   var config = [];
   var i = 0;
   var inputResult = await readFileInput();
@@ -82,11 +91,46 @@ async function inputTokens() {
     var recursivePrompt = function() {
       var token = tokens[i];
       var type;
-      // if (token === "PORT")
-      //   type = /^\d+$/; //regex for numbers only
       if (i === tokens.length) {
         return resolve("Configuration complete!");
       }
+      if (token === 'WICKRIO_BOT_NAME' && process.env.WICKRIO_BOT_NAME !== undefined){
+        var input = token + '=' + process.env.WICKRIO_BOT_NAME;
+        config.push(input);
+        i++;
+        return recursivePrompt();
+      } else if (token === 'DATABASE_ENCRYPTION_KEY' && process.env.DATABASE_ENCRYPTION_KEY !== undefined){
+        var input = token + '=' + process.env.DATABASE_ENCRYPTION_KEY;
+        config.push(input);
+        i++;
+        return recursivePrompt();
+      } else if(token === 'BOT_CLIENT_PORT' && process.env.BOT_CLIENT_PORT !== undefined){
+        var input = token + '=' + process.env.BOT_CLIENT_PORT;
+        config.push(input);
+        i++;
+        return recursivePrompt();
+      } else if(token === 'BOT_CLIENT_SERVER' && process.env.BOT_CLIENT_SERVER !== undefined){
+        var input = token + '=' + process.env.BOT_CLIENT_SERVER;
+        config.push(input);
+        i++;
+        return recursivePrompt();
+      } else if(token === 'GOOGLE_CALENDAR_CLIENT_ID' && process.env.GOOGLE_CALENDAR_CLIENT_ID !== undefined){
+        var input = token + '=' + process.env.GOOGLE_CALENDAR_CLIENT_ID;
+        config.push(input);
+        i++;
+        return recursivePrompt();
+      } else if(token === 'GOOGLE_CALENDAR_PROJECT_ID' && process.env.GOOGLE_CALENDAR_PROJECT_ID !== undefined){
+        var input = token + '=' + process.env.GOOGLE_CALENDAR_PROJECT_ID;
+        config.push(input);
+        i++;
+        return recursivePrompt();
+      } else if(token === 'GOOGLE_CALENDAR_CLIENT_SECRET' && process.env.GOOGLE_CALENDAR_CLIENT_SECRET !== undefined){
+        var input = token + '=' + process.env.GOOGLE_CALENDAR_CLIENT_SECRET;
+        config.push(input);
+        i++;
+        return recursivePrompt();
+      }
+
       var dflt = newObjectResult[token];
       var emptyChoice = false;
       if (dflt === "undefined" || dflt === undefined) {
@@ -130,14 +174,57 @@ async function inputTokens() {
     for (var j = 0; j < config.length; j++) {
       newObjectResult[objectKeyArray[j]] = objectValueArray[j];
     }
-    var obj = {
-      "value": process.argv[2],
-      "encrypted": false
-    };
-    newObjectResult.WICKRIO_BOT_NAME = obj;
     for (var key in newObjectResult) {
-      if (key === 'WICKRIO_BOT_NAME')
+      if (key === 'WICKRIO_BOT_NAME' && process.env.WICKRIO_BOT_NAME !== undefined){
+        var obj = {
+          "value": process.env.WICKRIO_BOT_NAME,
+          "encrypted": false
+        };
+        newObjectResult.WICKRIO_BOT_NAME = obj;
         continue;
+      } else if(key === 'DATABASE_ENCRYPTION_KEY' && process.env.DATABASE_ENCRYPTION_KEY !== undefined){
+        var obj = {
+          "value": process.env.DATABASE_ENCRYPTION_KEY,
+          "encrypted": false
+        };
+        newObjectResult.DATABASE_ENCRYPTION_KEY = obj;
+        continue;
+      } else if(key === 'BOT_CLIENT_PORT' && process.env.BOT_CLIENT_PORT !== undefined){
+        var obj = {
+          "value": process.env.BOT_CLIENT_PORT,
+          "encrypted": false
+        };
+        newObjectResult.BOT_CLIENT_PORT = obj;
+        continue;
+      } else if(key === 'BOT_CLIENT_SERVER' && process.env.BOT_CLIENT_SERVER !== undefined){
+        var obj = {
+          "value": process.env.BOT_CLIENT_SERVER,
+          "encrypted": false
+        };
+        newObjectResult.BOT_CLIENT_SERVER = obj;
+        continue;
+      } else if(key === 'GOOGLE_CALENDAR_CLIENT_ID' && process.env.GOOGLE_CALENDAR_CLIENT_ID !== undefined){
+        var obj = {
+          "value": process.env.GOOGLE_CALENDAR_CLIENT_ID,
+          "encrypted": false
+        };
+        newObjectResult.GOOGLE_CALENDAR_CLIENT_ID = obj;
+        continue;
+      } else if(key === 'GOOGLE_CALENDAR_PROJECT_ID' && process.env.GOOGLE_CALENDAR_PROJECT_ID !== undefined){
+        var obj = {
+          "value": process.env.GOOGLE_CALENDAR_PROJECT_ID,
+          "encrypted": false
+        };
+        newObjectResult.GOOGLE_CALENDAR_PROJECT_ID = obj;
+        continue;
+      } else if(key === 'GOOGLE_CALENDAR_CLIENT_SECRET' && process.env.GOOGLE_CALENDAR_CLIENT_SECRET !== undefined){
+        var obj = {
+          "value": process.env.GOOGLE_CALENDAR_CLIENT_SECRET,
+          "encrypted": false
+        };
+        newObjectResult.GOOGLE_CALENDAR_CLIENT_SECRET = obj;
+        continue;
+      }
       var obj = {
         "value": newObjectResult[key],
         "encrypted": false
@@ -149,6 +236,16 @@ async function inputTokens() {
     }
     try {
       var cp = execSync('cp processes.json processes_backup.json');
+
+      if (process.env.WICKRIO_BOT_NAME !== undefined) {
+        var newName = "WickrIO-Monitor-Bot_" + process.env.WICKRIO_BOT_NAME;
+      } else if (newObjectResult.WICKRIO_BOT_NAME.value !== undefined) {
+        var newName = "WickrIO-Monitor-Bot_" + newObjectResult.WICKRIO_BOT_NAME.value;
+      } else {
+        var newName = "WickrIO-Monitor-Bot";
+      }
+      dataParsed.apps[0].name = newName;
+
       var assign = Object.assign(dataParsed.apps[0].env.tokens, newObjectResult);
       var ps = fs.writeFileSync('./processes.json', JSON.stringify(dataParsed, null, 2));
     } catch (err) {
@@ -169,8 +266,54 @@ function readFileInput() {
       return rfs;
     } else
       return rfs.trim().split('\n');
-  } catch (err) {
+    }
+  catch (err) {
     console.log(err);
     process.exit();
   }
 }
+
+function processConfigured()
+{
+    var processes;
+    try {
+        processes = fs.readFileSync('./processes.json', 'utf-8');
+        if (!processes) {
+          console.log("Error reading processes.json!")
+          return false;
+        }
+    }
+    catch (err) {
+        console.log(err);
+        return false;
+    }
+
+    var pjson = JSON.parse(processes);
+    if (pjson.apps[0].env.tokens === undefined) {
+        return false;
+    }
+
+  var tokens = ['WICKRIO_BOT_NAME', 'DATABASE_ENCRYPTION_KEY', 'BOT_CLIENT_PORT', 'BOT_CLIENT_SERVER', 'GOOGLE_CALENDAR_CLIENT_ID', 'GOOGLE_CALENDAR_PROJECT_ID', 'GOOGLE_CALENDAR_CLIENT_SECRET'];
+
+    if (pjson.apps[0].env.tokens.WICKRIO_BOT_NAME === undefined) {
+        return false;
+    }
+    if (pjson.apps[0].env.tokens.BOT_CLIENT_PORT === undefined) {
+        return false;
+    }
+    if (pjson.apps[0].env.tokens.BOT_CLIENT_SERVER === undefined) {
+        return false;
+    }
+    if (pjson.apps[0].env.tokens.GOOGLE_CALENDAR_CLIENT_ID === undefined) {
+        return false;
+    }
+    if (pjson.apps[0].env.tokens.GOOGLE_CALENDAR_PROJECT_ID === undefined) {
+        return false;
+    }
+    if (pjson.apps[0].env.tokens.GOOGLE_CALENDAR_CLIENT_SECRET === undefined) {
+        return false;
+    }
+
+    return true;
+}
+
