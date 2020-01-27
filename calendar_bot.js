@@ -85,7 +85,7 @@ return new Promise(async (resolve, reject) => {
   try {
     var status;
     if (process.argv[2] === undefined) {
-      bot_username = tokens.BOT_USERNAME.value;
+      bot_username = tokens.WICKRIO_BOT_NAME.value;
       status = await bot.start(bot_username)
       resolve(status);
     } else {

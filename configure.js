@@ -6,6 +6,8 @@ const dataParsed = JSON.parse(dataStringify);
 const {exec, execSync, execFileSync} = require('child_process');
 prompt.colors = false;
 
+const tokens = ['WICKRIO_BOT_NAME', 'DATABASE_ENCRYPTION_KEY', 'BOT_CLIENT_PORT', 'BOT_CLIENT_SERVER', 'GOOGLE_CALENDAR_CLIENT_ID', 'GOOGLE_CALENDAR_PROJECT_ID', 'GOOGLE_CALENDAR_CLIENT_SECRET'];
+
 process.stdin.resume(); //so the program will not close instantly
 
 function exitHandler(options, err) {
@@ -68,25 +70,11 @@ async function main() {
 
 async function inputTokens() {
   //Add any tokens(as strings separated by commas) you want to prompt for in the configuration process here
-  var tokens = ['WICKRIO_BOT_NAME', 'DATABASE_ENCRYPTION_KEY', 'BOT_CLIENT_PORT', 'BOT_CLIENT_SERVER', 'GOOGLE_CALENDAR_CLIENT_ID', 'GOOGLE_CALENDAR_PROJECT_ID', 'GOOGLE_CALENDAR_CLIENT_SECRET'];
   var config = [];
   var i = 0;
-  var inputResult = await readFileInput();
-  let objectKeyArray = [];
-  let objectValueArray = [];
-  if (inputResult !== "" || inputResult !== undefined) {
-    for (var x = 0; x < inputResult.length; x++) {
-      let locationEqual = inputResult[x].indexOf("=");
-      let objectKey = inputResult[x].slice(0, locationEqual);
-      let objectValue = inputResult[x].slice(locationEqual + 1, inputResult[x].length); //Input value
-      objectKeyArray.push(objectKey);
-      objectValueArray.push(objectValue);
-    }
-    var newObjectResult = {};
-    for (var j = 0; j < inputResult.length; j++) {
-      newObjectResult[objectKeyArray[j]] = objectValueArray[j];
-    }
-  }
+
+  newObjectResult = getCurrentValues();
+
   return new Promise((resolve, reject) => {
     var recursivePrompt = function() {
       var token = tokens[i];
@@ -132,6 +120,7 @@ async function inputTokens() {
       }
 
       var dflt = newObjectResult[token];
+
       var emptyChoice = false;
       if (dflt === "undefined" || dflt === undefined) {
         dflt = "N/A";
@@ -258,19 +247,47 @@ async function inputTokens() {
   });
 }
 
-function readFileInput() {
-  try {
-    var rfs = fs.readFileSync('./processes.json', 'utf-8');
-    if (!rfs) {
-      console.log("Error reading processes.json!")
-      return rfs;
-    } else
-      return rfs.trim().split('\n');
+function getCurrentValues()
+{
+    var newObjectResult = {};
+    var processes;
+    try {
+        processes = fs.readFileSync('./processes.json', 'utf-8');
+        if (!processes) {
+          console.log("Error reading processes.json!")
+          return newObjectResult;
+        }
     }
-  catch (err) {
-    console.log(err);
-    process.exit();
-  }
+    catch (err) {
+        console.log(err);
+        return newObjectResult;
+    }
+
+    var pjson = JSON.parse(processes);
+    if (pjson.apps[0].env.tokens === undefined) {
+        return newObjectResult;
+    }
+
+    if (pjson.apps[0].env.tokens.WICKRIO_BOT_NAME !== undefined) {
+      newObjectResult['WICKRIO_BOT_NAME'] = pjson.apps[0].env.tokens.WICKRIO_BOT_NAME.value;
+    }
+    if (pjson.apps[0].env.tokens.BOT_CLIENT_PORT !== undefined) {
+      newObjectResult['BOT_CLIENT_PORT'] = pjson.apps[0].env.tokens.BOT_CLIENT_PORT.value;
+    }
+    if (pjson.apps[0].env.tokens.BOT_CLIENT_SERVER !== undefined) {
+      newObjectResult['BOT_CLIENT_SERVER'] = pjson.apps[0].env.tokens.BOT_CLIENT_SERVER.value;
+    }
+    if (pjson.apps[0].env.tokens.GOOGLE_CALENDAR_CLIENT_ID !== undefined) {
+      newObjectResult['GOOGLE_CALENDAR_CLIENT_ID'] = pjson.apps[0].env.tokens.GOOGLE_CALENDAR_CLIENT_ID.value;
+    }
+    if (pjson.apps[0].env.tokens.GOOGLE_CALENDAR_PROJECT_ID !== undefined) {
+      newObjectResult['GOOGLE_CALENDAR_PROJECT_ID'] = pjson.apps[0].env.tokens.GOOGLE_CALENDAR_PROJECT_ID.value;
+    }
+    if (pjson.apps[0].env.tokens.GOOGLE_CALENDAR_CLIENT_SECRET !== undefined) {
+      newObjectResult['GOOGLE_CALENDAR_CLIENT_SECRET'] = pjson.apps[0].env.tokens.GOOGLE_CALENDAR_CLIENT_SECRET.value;
+    }
+
+    return newObjectResult;
 }
 
 function processConfigured()
@@ -292,8 +309,6 @@ function processConfigured()
     if (pjson.apps[0].env.tokens === undefined) {
         return false;
     }
-
-  var tokens = ['WICKRIO_BOT_NAME', 'DATABASE_ENCRYPTION_KEY', 'BOT_CLIENT_PORT', 'BOT_CLIENT_SERVER', 'GOOGLE_CALENDAR_CLIENT_ID', 'GOOGLE_CALENDAR_PROJECT_ID', 'GOOGLE_CALENDAR_CLIENT_SECRET'];
 
     if (pjson.apps[0].env.tokens.WICKRIO_BOT_NAME === undefined) {
         return false;
