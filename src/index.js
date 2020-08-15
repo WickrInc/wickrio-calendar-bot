@@ -1,23 +1,23 @@
 import WickrIOAPI from 'wickrio_addon'
 import WickrIOBotAPI from 'wickrio-bot-api'
-const WickrUser = WickrIOBotAPI.WickrUser
-const bot = new WickrIOBotAPI.WickrIOBot()
-
-import fs from 'fs'
+// import fs from 'fs'
 import moment from 'moment'
 import fuse from 'fuse.js'
-import util from 'util'
+// import util from 'util'
 import { CronJob } from 'cron'
 import { google } from 'googleapis'
 import express from 'express'
-const app = express()
 import validator from 'validator'
+
+const WickrUser = WickrIOBotAPI.WickrUser
+const bot = new WickrIOBotAPI.WickrIOBot()
+const app = express()
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar']
 module.exports = WickrIOAPI
-process.stdin.resume() //so the program will not close instantly
+process.stdin.resume() // so the program will not close instantly
 
-var responseMessageList = [
+const responseMessageList = [
   "What is the title of your event (to skip: 'skip')?",
   "What is the location of the event (to skip: 'skip')?",
   "Please give me a description of the event you want to create (to skip: 'skip')",
@@ -29,7 +29,7 @@ var responseMessageList = [
   'How many minutes before the event would you like a reminder?',
 ]
 
-var fieldDescriptions = [
+const fieldDescriptions = [
   'Title',
   'Location',
   'Description',
@@ -43,7 +43,7 @@ var fieldDescriptions = [
 
 async function exitHandler(options, err) {
   try {
-    var closed = await bot.close()
+    await bot.close()
     if (err || options.exit) {
       console.log('Exit reason:', err)
       process.exit()
@@ -55,7 +55,7 @@ async function exitHandler(options, err) {
   }
 }
 
-//catches ctrl+c and stop.sh events
+// catches ctrl+c and stop.sh events
 process.on(
   'SIGINT',
   exitHandler.bind(null, {
@@ -77,7 +77,7 @@ process.on(
   })
 )
 
-//catches uncaught exceptions
+// catches uncaught exceptions
 process.on(
   'uncaughtException',
   exitHandler.bind(null, {
@@ -86,128 +86,131 @@ process.on(
   })
 )
 
-var tokens,
-  credentials,
-  bot_username,
-  bot_client_port,
-  bot_client_server,
-  client_id,
-  project_id,
-  client_secret
-var tokens = JSON.parse(process.env.tokens)
+// tokens,
+let credentials
+// bot_username,
+// botClientPort,
+// botClientServer,
+// clientID,
+// projectID,
+// client_secret
+const tokens = JSON.parse(process.env.tokens)
 
-return new Promise(async (resolve, reject) => {
-  try {
-    var status
-    if (process.argv[2] === undefined) {
-      bot_username = tokens.BOT_USERNAME.value
-      status = await bot.start(bot_username)
-      resolve(status)
-    } else {
-      status = await bot.start(process.argv[2])
-      resolve(status)
-    }
-  } catch (err) {
-    return console.log(err)
-  }
-})
-  .then(async result => {
-    if (!result) {
-      exitHandler(null, {
-        exit: true,
-        reason: 'Client not able to start',
-      })
-    }
+const main = () =>
+  new Promise((resolve, reject) => {
     try {
-      if (tokens.GOOGLE_CALENDAR_CLIENT_ID.encrypted) {
-        client_id = WickrIOAPI.cmdDecryptString(
-          tokens.GOOGLE_CALENDAR_CLIENT_ID.value
-        )
+      let status
+      if (process.argv[2] === undefined) {
+        const botUsername = tokens.BOT_USERNAME.value
+        status = bot.start(botUsername)
+        resolve(status)
       } else {
-        client_id = tokens.GOOGLE_CALENDAR_CLIENT_ID.value
+        status = bot.start(process.argv[2])
+        resolve(status)
       }
-      if (tokens.GOOGLE_CALENDAR_PROJECT_ID.encrypted) {
-        project_id = WickrIOAPI.cmdDecryptString(
-          tokens.GOOGLE_CALENDAR_PROJECT_ID.value
-        )
-      } else {
-        project_id = tokens.GOOGLE_CALENDAR_PROJECT_ID.value
-      }
-      if (tokens.GOOGLE_CALENDAR_CLIENT_SECRET.encrypted) {
-        client_secret = WickrIOAPI.cmdDecryptString(
-          tokens.GOOGLE_CALENDAR_CLIENT_SECRET.value
-        )
-      } else {
-        client_secret = tokens.GOOGLE_CALENDAR_CLIENT_SECRET.value
-      }
-      if (tokens.BOT_CLIENT_PORT.encrypted) {
-        bot_client_port = WickrIOAPI.cmdDecryptString(
-          tokens.BOT_CLIENT_PORT.value
-        )
-      } else {
-        bot_client_port = tokens.BOT_CLIENT_PORT.value
-      }
-      if (tokens.BOT_CLIENT_SERVER.encrypted) {
-        bot_client_server = WickrIOAPI.cmdDecryptString(
-          tokens.BOT_CLIENT_SERVER.value
-        )
-      } else {
-        bot_client_server = tokens.BOT_CLIENT_SERVER.value
-      }
-      credentials = {
-        installed: {
-          client_id: client_id,
-          project_id: project_id,
-          auth_uri: 'https://accounts.google.com/o/oauth2/auth',
-          token_uri: 'https://www.googleapis.com/oauth2/v3/token',
-          auth_provider_x509_cert_url:
-            'https://www.googleapis.com/oauth2/v1/certs',
-          client_secret: client_secret,
-          redirect_uris: [
-            'https://' + bot_client_server + '/auth/google/callback',
-          ],
-        },
-      }
-      await bot.startListening(listen)
-      server = app.listen(bot_client_port, () => {
-        console.log('Wickr IO Calendar Bot is running on port', bot_client_port)
-      })
-
-      app.get('/auth/google/callback', (req, res) => {
-        // res.redirect('back');
-        res.send('Thanks for using the WickrIO Google Calendar Integration!')
-        var code = req.query.code //access_token
-        var user = bot.getUser(req.query.state)
-        if (user.command === '/list' && user.command)
-          authorize(
-            user,
-            user.current_vGroupID,
-            user.argument,
-            listEvents,
-            code
-          )
-        else if (user.command === '/create' && user.googleCalendarEvent)
-          authorize(
-            user,
-            user.current_vGroupID,
-            user.googleCalendarEvent,
-            createEvent,
-            code
-          )
-        else
-          WickrIOAPI.cmdSendRoomMessage(
-            user.current_vGroupID,
-            'Your OAuth request expired, please retry by starting a /list or /create command.'
-          )
-      })
     } catch (err) {
-      console.log(err)
-      process.exit()
+      return console.log(err)
     }
   })
-  .catch(error => {
-    console.log(error)
-  })
+    .then(async result => {
+      if (!result) {
+        exitHandler(null, {
+          exit: true,
+          reason: 'Client not able to start',
+        })
+      }
+      let clientID, projectID, clientSecret, botClientPort, botClientServer
+      try {
+        if (tokens.GOOGLE_CALENDAR_CLIENT_ID.encrypted) {
+          clientID = WickrIOAPI.cmdDecryptString(
+            tokens.GOOGLE_CALENDAR_CLIENT_ID.value
+          )
+        } else {
+          clientID = tokens.GOOGLE_CALENDAR_CLIENT_ID.value
+        }
+        if (tokens.GOOGLE_CALENDAR_PROJECT_ID.encrypted) {
+          projectID = WickrIOAPI.cmdDecryptString(
+            tokens.GOOGLE_CALENDAR_PROJECT_ID.value
+          )
+        } else {
+          projectID = tokens.GOOGLE_CALENDAR_PROJECT_ID.value
+        }
+        if (tokens.GOOGLE_CALENDAR_CLIENT_SECRET.encrypted) {
+          clientSecret = WickrIOAPI.cmdDecryptString(
+            tokens.GOOGLE_CALENDAR_CLIENT_SECRET.value
+          )
+        } else {
+          clientSecret = tokens.GOOGLE_CALENDAR_CLIENT_SECRET.value
+        }
+        if (tokens.BOT_CLIENT_PORT.encrypted) {
+          botClientPort = WickrIOAPI.cmdDecryptString(
+            tokens.BOT_CLIENT_PORT.value
+          )
+        } else {
+          botClientPort = tokens.BOT_CLIENT_PORT.value
+        }
+        if (tokens.BOT_CLIENT_SERVER.encrypted) {
+          botClientServer = WickrIOAPI.cmdDecryptString(
+            tokens.BOT_CLIENT_SERVER.value
+          )
+        } else {
+          botClientServer = tokens.BOT_CLIENT_SERVER.value
+        }
+        credentials = {
+          installed: {
+            clientID: clientID,
+            projectID: projectID,
+            auth_uri: 'https://accounts.google.com/o/oauth2/auth',
+            token_uri: 'https://www.googleapis.com/oauth2/v3/token',
+            auth_provider_x509_cert_url:
+              'https://www.googleapis.com/oauth2/v1/certs',
+            client_secret: clientSecret,
+            redirect_uris: [
+              'https://' + botClientServer + '/auth/google/callback',
+            ],
+          },
+        }
+        await bot.startListening(listen)
+        app.listen(botClientPort, () => {
+          console.log('Wickr IO Calendar Bot is running on port', botClientPort)
+        })
+
+        app.get('/auth/google/callback', (req, res) => {
+          // res.redirect('back');
+          res.send('Thanks for using the WickrIO Google Calendar Integration!')
+          const code = req.query.code // access_token
+          const user = bot.getUser(req.query.state)
+          if (user.command === '/list' && user.command)
+            authorize(
+              user,
+              user.current_vGroupID,
+              user.argument,
+              listEvents,
+              code
+            )
+          else if (user.command === '/create' && user.googleCalendarEvent)
+            authorize(
+              user,
+              user.current_vGroupID,
+              user.googleCalendarEvent,
+              createEvent,
+              code
+            )
+          else
+            WickrIOAPI.cmdSendRoomMessage(
+              user.current_vGroupID,
+              'Your OAuth request expired, please retry by starting a /list or /create command.'
+            )
+        })
+      } catch (err) {
+        console.log(err)
+        process.exit()
+      }
+    })
+    .catch(error => {
+      console.log(error)
+    })
+// return thing
 
 /**
  * Create an OAuth2 client with the given credentials, and then execute the
@@ -216,16 +219,20 @@ return new Promise(async (resolve, reject) => {
  * @param {function} callback The callback to call with the authorized client.
  */
 function authorize(wickrUser, vGroupID, argument, callback, code) {
-  const { client_secret, client_id, redirect_uris } = credentials.installed
+  const {
+    client_secret: clientSecret,
+    clientID,
+    redirect_uris: redirectUris,
+  } = credentials.installed
   const oAuth2Client = new google.auth.OAuth2(
-    client_id,
-    client_secret,
-    redirect_uris[0]
+    clientID,
+    clientSecret,
+    redirectUris[0]
   )
-  //Handling refresh tokens
+  // Handling refresh tokens
   oAuth2Client.on('tokens', tokens => {
     if (tokens.refresh_token) {
-      //Storing the refresh_token in database
+      // Storing the refresh_token in database
       wickrUser.token = tokens
     }
   })
@@ -242,7 +249,7 @@ function authorize(wickrUser, vGroupID, argument, callback, code) {
           err
         )
       }
-      //Store the token to disk for later program executions
+      // Store the token to disk for later program executions
       oAuth2Client.setCredentials(token)
       wickrUser.token = token
       getPrimaryCalInfo(oAuth2Client, wickrUser, function () {
@@ -314,8 +321,8 @@ function getPrimaryCalInfo(auth, wickrUser, callback) {
             return console.log(err)
           }
         }
-        var timeZone = response.data.timeZone
-        var user = bot.getUser(wickrUser.userEmail)
+        const timeZone = response.data.timeZone
+        const user = bot.getUser(wickrUser.userEmail)
         user.timeZone = timeZone
         callback()
       }
@@ -338,7 +345,7 @@ function listEvents(auth, vGroupID, wickrUser, argument) {
     if (isNaN(argument) || !argument) {
       argument = 5
     }
-    var user = bot.getUser(wickrUser.userEmail)
+    const user = bot.getUser(wickrUser.userEmail)
     user.events = []
     calendar.events.list(
       {
@@ -364,30 +371,30 @@ function listEvents(auth, vGroupID, wickrUser, argument) {
         }
         const events = res.data.items
         if (events.length) {
-          var eventsMsg = []
+          const eventsMsg = []
           eventsMsg.push(argument + ' upcoming ' + ' events:')
           events.map((event, i) => {
             i += 1
-            var title, start, startTime, startDate
-            if (event.start.hasOwnProperty('dateTime')) {
+            let title, start, startTime, startDate
+            if (event.start?.dateTime) {
               start = event.start.dateTime.split('T')
               startTime = start[1].substr(0, start[1].length - 9)
               startTime = moment(startTime, 'HH:mm:ss').format('h:mm A')
               startDate = moment(start[0], 'YYYY-MM-DD').format('M/D/YYYY')
-            } else if (event.start.hasOwnProperty('date')) {
+            } else if (event.start?.date) {
               startDate = moment(event.start.date, 'YYYY-MM-DD').format(
                 'M/D/YYYY'
               )
               startTime = 'All day'
             }
 
-            var options = {
-              hour: 'numeric',
-              minute: 'numeric',
-              hour12: true,
-            }
-            /////////////////////////////////////
-            //For modify, get and reminder actions
+            // const options = {
+            //   hour: 'numeric',
+            //   minute: 'numeric',
+            //   hour12: true,
+            // }
+            /// //////////////////////////////////
+            // For modify, get and reminder actions
             user.events.push({
               number: i,
               id: event.id,
@@ -397,7 +404,7 @@ function listEvents(auth, vGroupID, wickrUser, argument) {
             } else {
               title = event.summary
             }
-            //////////////////////////////////////
+            /// ///////////////////////////////////
             eventsMsg.push(`${i}: ${title} - ${startDate} at ${startTime}`)
           })
           // eventsMsg.push('To get detailed information about a specific event, type /get EVENT_NUMBER');
@@ -435,9 +442,9 @@ function createEvent(auth, vGroupID, wickrUser, event) {
         )
         return
       }
-      var link = response.data.htmlLink
+      const link = response.data.htmlLink
       WickrIOAPI.cmdSendRoomMessage(vGroupID, 'Event created: ' + link)
-      var user = bot.getUser(wickrUser.userEmail)
+      const user = bot.getUser(wickrUser.userEmail)
       user.index = 12
       WickrIOAPI.cmdSendRoomMessage(
         vGroupID,
@@ -452,10 +459,10 @@ function modifyEvent(auth, vGroupID, wickrUser, event) {
     version: 'v3',
     auth,
   })
-  var eventId
-  var eventLocalId = event.eventId
+  let eventId
+  const eventLocalId = event.eventId
   delete event.eventId
-  for (var i in wickrUser.events) {
+  for (const i in wickrUser.events) {
     if (parseInt(eventLocalId) === wickrUser.events[i].number) {
       eventId = wickrUser.events[i].id
     }
@@ -479,26 +486,27 @@ function modifyEvent(auth, vGroupID, wickrUser, event) {
         )
         return
       }
-      var link = response.data.htmlLink
+      const link = response.data.htmlLink
       WickrIOAPI.cmdSendRoomMessage(vGroupID, 'Event updated: ' + link)
     }
   )
 }
 
 function setReminders(wickrUser, vGroupID, reminderType) {
-  var timeBefore = wickrUser.wickrReminderTime.split(' ')
+  const timeBefore = wickrUser.wickrReminderTime.split(' ')
+  let startTime
   if (!wickrUser.googleCalendarEvent.start.date) {
-    var startTime = moment.tz(wickrUser.startTimeDate, wickrUser.timeZone)
+    startTime = moment.tz(wickrUser.startTimeDate, wickrUser.timeZone)
   } else {
-    var startTime = moment.tz(wickrUser.startDate, wickrUser.timeZone)
+    startTime = moment.tz(wickrUser.startDate, wickrUser.timeZone)
   }
   // ADD interpreting various versions of the words: days, hours and minutes
   // var hour = ['h', 'hr', 'hour', 'hours'];
   // wickrUser.startTimeDate.toNow()
   startTime.subtract(parseInt(timeBefore[0]), timeBefore[1])
-  var date = new Date(startTime)
+  const date = new Date(startTime)
   if (wickrUser.wickrReminderType === 'personal') {
-    var event = wickrUser.event
+    const event = wickrUser.event
     event.wickrReminderTime = wickrUser.wickrReminderTime
     try {
       const job = new CronJob(
@@ -528,7 +536,6 @@ function setReminders(wickrUser, vGroupID, reminderType) {
           'How long before the event would you like the reminder(in days, hours or minutes)? (example: 1 hour)'
         )
       )
-      console.log('CronJob err:', err)
     }
     WickrIOAPI.cmdSendRoomMessage(
       vGroupID,
@@ -540,14 +547,14 @@ function setReminders(wickrUser, vGroupID, reminderType) {
     wickrUser.wickrReminderType === 'room' ||
     wickrUser.wickrReminderType === 'both'
   ) {
-    var roomChoice = wickrUser.wickrReminderRoomNumber
-    var vGroupID
-    for (var i in wickrUser.rooms) {
+    const roomChoice = wickrUser.wickrReminderRoomNumber
+    let vGroupID
+    for (const i in wickrUser.rooms) {
       if (parseInt(roomChoice) === wickrUser.rooms[i].number) {
         vGroupID = wickrUser.rooms[i].vGroupID
       }
     }
-    var event = wickrUser.event
+    const event = wickrUser.event
     event.wickrReminderTime = wickrUser.wickrReminderTime
     if (wickrUser.wickrReminderType.toLowerCase() === 'room') {
       try {
@@ -578,7 +585,6 @@ function setReminders(wickrUser, vGroupID, reminderType) {
             'How long before the event would you like the reminder(in days, hours or minutes)? (example: 1 hour)'
           )
         )
-        console.log('CronJob err:', err)
       }
     } else {
       try {
@@ -616,7 +622,6 @@ function setReminders(wickrUser, vGroupID, reminderType) {
             'How long before the event would you like the reminder(in days, hours or minutes)? (example: 1 hour)'
           )
         )
-        console.log('CronJob err:', err)
       }
     }
     // require('crontab').load(function(err, crontab) {
@@ -634,11 +639,11 @@ function setReminders(wickrUser, vGroupID, reminderType) {
 
 function listen(rMessage) {
   try {
-    var parsedMessage = bot.parseMessage(rMessage)
+    const parsedMessage = bot.parseMessage(rMessage)
     if (!parsedMessage) {
       return
     }
-    let {
+    const {
       // time,
       // messageID,
       // users,
@@ -664,7 +669,7 @@ function listen(rMessage) {
     } = parsedMessage
 
     if (command === '/help' || message === 'help') {
-      var help =
+      const help =
         '/help - List all available commands\n' +
         '/list - List 5 most recent upcoming Google Calendar events\n' +
         '/list AMOUNT - List AMOUNT upcoming Google Calendar events\n' +
@@ -672,9 +677,9 @@ function listen(rMessage) {
         "/modify EVENT_ID - Modify the specified Google Calendar event(run '/list' first to get the list of events and their IDs)"
       return console.log(WickrIOAPI.cmdSendRoomMessage(vGroupID, help))
     }
-    var user = bot.getUser(userEmail)
+    let user = bot.getUser(userEmail)
     if (user === undefined) {
-      var wickrUser = new WickrUser(userEmail, {
+      const wickrUser = new WickrUser(userEmail, {
         index: 0,
         personal_vGroupID: '',
         command: '',
@@ -686,7 +691,6 @@ function listen(rMessage) {
       })
       user = bot.addUser(wickrUser)
     }
-    var current = user.index
     user.current_vGroupID = vGroupID
     if (command === '/list') {
       user.command = command
@@ -715,11 +719,11 @@ function listen(rMessage) {
         WickrIOAPI.cmdSendRoomMessage(vGroupID, responseMessageList[0])
       )
     } else {
-      /////////////////////////////////
-      //start question flow
-      /////////////////////////////////
+      /// //////////////////////////////
+      // start question flow
+      /// //////////////////////////////
       user = bot.getUser(userEmail)
-      var current = user.index
+      let current = user.index
       if (current < 16 && current > 0) {
         if (current === 1) {
           if (message !== 'skip') user.event.title = message
@@ -747,9 +751,9 @@ function listen(rMessage) {
           }
           user.event.startDate = message
         } else if (current === 5) {
-          var choice = message
-          var options = ['allday', 'all day']
-          var response = options.some(el => choice.includes(el))
+          const choice = message
+          const options = ['allday', 'all day']
+          const response = options.some(el => choice.includes(el))
           if (response) {
             user.index = current + 1
             user.event.startTime = 'Allday'
@@ -783,9 +787,9 @@ function listen(rMessage) {
           user.event.endTime = message
         } else if (current === 7) {
           if (message !== 'none') {
-            var attendees = []
-            var emails = message.split(',')
-            for (var i in emails) {
+            const attendees = []
+            const emails = message.split(',')
+            for (const i in emails) {
               if (!validator.isEmail(emails[i].replace(/\s/g, ''))) {
                 return console.log(
                   WickrIOAPI.cmdSendRoomMessage(
@@ -805,9 +809,9 @@ function listen(rMessage) {
             user.event.attendees = message
           }
         } else if (current === 8) {
-          var choice = message
-          var options = ['email', 'popup', 'both', 'none']
-          var response = options.some(el => choice.includes(el))
+          const choice = message
+          const options = ['email', 'popup', 'both', 'none']
+          const response = options.some(el => choice.includes(el))
           if (!response) {
             return console.log(
               WickrIOAPI.cmdSendRoomMessage(
@@ -825,8 +829,8 @@ function listen(rMessage) {
           }
         } else if (current === 9) {
           user.event.reminderTime = message
-          var reminderChoice = user.event.reminderChoice
-          var reminders = []
+          const reminderChoice = user.event.reminderChoice
+          const reminders = []
           if (reminderChoice === 'email') {
             reminders.push({
               method: 'email',
@@ -852,14 +856,14 @@ function listen(rMessage) {
           return listen(rMessage)
         } else if (current === 10) {
           user.index = current + 1
-          var event = user.event
-          var confirmationMessage = [
+          const event = user.event
+          let confirmationMessage = [
             'Please confirm the information you entered:',
           ]
-          var answer
-          ////////////////////////
+          let answer
+          /// /////////////////////
           Object.keys(event).forEach(function (key, index) {
-            var choice = event[key]
+            let choice = event[key]
             if (index > 3 && !event.startTime) {
               index += 2
             }
@@ -873,8 +877,8 @@ function listen(rMessage) {
               fieldDescriptions[index] === 'Attendees' &&
               choice !== 'none'
             ) {
-              var emails = []
-              for (var i in choice) {
+              const emails = []
+              for (const i in choice) {
                 emails.push(choice[i].email)
               }
               choice = emails.join('\n\t')
@@ -891,9 +895,9 @@ function listen(rMessage) {
         } else if (current === 11) {
           user.index = 0
           if (message === 'yes' || message === 'y') {
-            var event = user.event
-            var timeZone = user.timeZone
-            var googleCalendarEvent = {}
+            const event = user.event
+            const timeZone = user.timeZone
+            const googleCalendarEvent = {}
 
             if (event.title !== 'none') {
               googleCalendarEvent.summary = event.title
@@ -908,7 +912,7 @@ function listen(rMessage) {
             }
 
             if (!event.startTime || event.startTime === 'Allday') {
-              var startDate = moment(event.startDate, 'MM-DD-YYYY').format(
+              const startDate = moment(event.startDate, 'MM-DD-YYYY').format(
                 'YYYY-MM-DD'
               )
               user.startDate = startDate
@@ -921,7 +925,7 @@ function listen(rMessage) {
                 timeZone: timeZone,
               }
             } else {
-              var startTime, endTime
+              let startTime, endTime
               if (moment(event.startTime, 'HH:mm:ss', true).isValid()) {
                 startTime = moment(event.startTime, 'HH:mm:ss')
               } else {
@@ -932,12 +936,12 @@ function listen(rMessage) {
               } else {
                 endTime = moment(event.endTime, 'h:mm A').format('HH:mm:ss')
               }
-              var startTimeDate = moment(
+              const startTimeDate = moment(
                 event.startDate + '' + startTime,
                 'MM-DD-YYYYTHH:mm:ss'
               ).format('YYYY-MM-DDTHH:mm:ss')
               user.startTimeDate = startTimeDate
-              var endTimeDate = moment(
+              const endTimeDate = moment(
                 event.startDate + '' + endTime,
                 'MM-DD-YYYYTHH:mm:ss'
               ).format('YYYY-MM-DDTHH:mm:ss')
@@ -965,19 +969,19 @@ function listen(rMessage) {
             }
             user.googleCalendarEvent = googleCalendarEvent
             if (user.command === '/create') {
-              var positiveResponse =
+              const positiveResponse =
                 'Great, please hold on while I create your Google Calendar event...'
               WickrIOAPI.cmdSendRoomMessage(vGroupID, positiveResponse)
               return authorize(user, vGroupID, googleCalendarEvent, createEvent)
             } else if (user.command === '/modify') {
               googleCalendarEvent.eventId = user.argument
-              var positiveResponse =
+              const positiveResponse =
                 'Great, please hold on while I update your Google Calendar event...'
               WickrIOAPI.cmdSendRoomMessage(vGroupID, positiveResponse)
               return authorize(user, vGroupID, googleCalendarEvent, modifyEvent)
             }
           } else {
-            var negativeResponse =
+            const negativeResponse =
               'Okay, ticket creation cancelled. you can restart this process by entering the /create command or /help for the list of all commands?'
             return WickrIOAPI.cmdSendRoomMessage(vGroupID, negativeResponse)
           }
@@ -998,10 +1002,10 @@ function listen(rMessage) {
           user.index += 1
           user.wickrReminderType = message
           if (message === 'room' || message === 'both') {
-            var rooms = WickrIOAPI.cmdGetRooms()
+            let rooms = WickrIOAPI.cmdGetRooms()
             rooms = JSON.parse(rooms)
-            var roomTitles = []
-            var roomsMessage = [
+            const roomTitles = []
+            let roomsMessage = [
               "Please choose a room number from the following list\n(FYI: Only rooms i'm apart of will show up on the list, if you don't see the desired room on the list, please add me to that room and run the /modify command on this event):\n",
             ]
             rooms.rooms.map((room, i) => {
@@ -1010,7 +1014,7 @@ function listen(rMessage) {
                 number: i,
                 vGroupID: room.vgroupid,
               })
-              var line = i + ': ' + room.title
+              const line = i + ': ' + room.title
               roomTitles.push(line)
             })
             roomsMessage.push(roomTitles.join('\n'))
@@ -1056,7 +1060,7 @@ function listen(rMessage) {
         }
       } else if (current === 16) {
         user.index = 0
-        var newMessage = JSON.parse(rMessage)
+        let newMessage = JSON.parse(rMessage)
         if (message === 'yes') {
           newMessage.message = user.command
         } else {
@@ -1065,8 +1069,8 @@ function listen(rMessage) {
         newMessage = JSON.stringify(newMessage)
         return listen(newMessage)
       } else {
-        var commands = ['/help', '/list', '/create', '/modify']
-        var options = {
+        const commands = ['/help', '/list', '/create', '/modify']
+        const options = {
           shouldSort: true,
           includeScore: true,
           threshold: 0.6,
@@ -1076,8 +1080,8 @@ function listen(rMessage) {
           minMatchCharLength: 3,
           keys: undefined,
         }
-        var fuzzy = new fuse(commands, options)
-        var result = fuzzy.search(message)
+        const fuzzy = new fuse(commands, options)
+        const result = fuzzy.search(message)
         console.log('result of fuzzy search:', result)
         user.index = 16
         if (result.length > 0) {
@@ -1097,3 +1101,4 @@ function listen(rMessage) {
     console.log(err)
   }
 }
+main()
