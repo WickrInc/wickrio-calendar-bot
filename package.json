@@ -1,39 +1,142 @@
 {
-  "name": "wickrio-calendar-bot",
-  "version": "5.47.1",
-  "description": "WickrIO Calendar Bot allows you to create, modify and list Google Calendar events in addition to setting in-Wickr reminder notifications before events",
-  "main": "calendar_bot.js",
-  "dependencies": {
-    "cron": "^1.7.1",
-    "crontab": "^1.2.0",
-    "express": "^4.17.1",
-    "fs": "0.0.2",
-    "fuse.js": "^3.4.5",
-    "googleapis": "^42.0.0",
-    "moment": "^2.24.0",
-    "pm2": "^3.5.1",
-    "prompt": "^1.0.0",
-    "validator": "^11.1.0",
-    "wickrio_addon": "5.44.x",
-    "wickrio-bot-api": "5.44.x"
-  },
-  "scripts": {
-    "start": "pm2 start processes.json --update-env",
-    "stop": "pm2 delete processes.json"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/WickrInc/wickrio-calendar-bot"
-  },
-  "keywords": [
-    "wickr",
-    "wickrio",
-    "wickrbot",
-    "bot",
-    "bots",
-    "secure",
-    "messaging",
-    "api"
-  ],
-  "database": true
+	"name": "wickrio-calendar-bot",
+	"version": "5.62.3",
+	"description": "WickrIO Calendar Bot allows you to create, modify and list Google Calendar events in addition to setting in-Wickr reminder notifications before events",
+	"main": "./build/index.js",
+	"dependencies": {
+		"cron": "^1.7.1",
+		"crontab": "^1.2.0",
+		"express": "^4.17.1",
+		"fs": "0.0.2",
+		"fuse.js": "^3.4.5",
+		"googleapis": "^42.0.0",
+		"moment": "^2.24.0",
+		"pm2": "^3.5.1",
+		"prompt": "^1.0.0",
+		"validator": "^11.1.0",
+		"wickrio_addon": "5.60.x",
+		"wickrio-bot-api": "5.62.x"
+	},
+	"scripts": {
+		"start": "pm2 start processes.json --update-env",
+		"dev": "nodemon --exec 'babel-node --inspect=0.0.0.0 src/index.js'",
+		"build": "rm -rf build && ./node_modules/.bin/babel ./src --out-dir ./build --ignore node_modules",
+		"lint": "eslint src/**/*.js --fix --color",
+		"prettier": "prettier --write ./src/*",
+		"stop": "pm2 delete processes.json"
+	},
+	"husky": {
+		"hooks": {
+			"pre-commit": "lint-staged"
+		}
+	},
+	"lint-staged": {
+		"./src/**/*.{js,jsx,ts,tsx}": [
+			"npm run prettier",
+			"npm run lint",
+			"npm run build"
+		]
+	},
+	"jest": {
+		"testEnvironment": "node",
+		"collectCoverage": true,
+		"coverageDirectory": "coverage",
+		"collectCoverageFrom": [
+			"src/**/*.js",
+			"!**/node_modules/**"
+		],
+		"coveragePathIgnorePatterns": [
+			"/node_modules/"
+		]
+	},
+	"prettier": {
+		"semi": false,
+		"arrowParens": "avoid",
+		"singleQuote": true,
+		"jsxBracketSameLine": false
+	},
+	"eslintConfig": {
+		"parser": "babel-eslint",
+		"extends": [
+			"standard",
+			"prettier",
+			"prettier/standard"
+		],
+		"plugins": [
+			"import",
+			"prettier",
+			"standard"
+		],
+		"parserOptions": {
+			"ecmaVersion": 2020
+		},
+		"env": {
+			"node": true,
+			"es6": true,
+			"jest": true
+		},
+		"rules": {
+			"space-before-function-paren": "off",
+			"new-cap": "off",
+			"prettier/prettier": "error",
+			"no-var": "error",
+			"prefer-const": "error"
+		}
+	},
+	"babel": {
+		"env": {
+			"test": {
+				"presets": [
+					"@babel/preset-env"
+				],
+				"plugins": [
+					"@babel/plugin-proposal-optional-chaining",
+					"@babel/plugin-transform-runtime",
+					"@babel/plugin-transform-modules-commonjs",
+					"@babel/plugin-proposal-class-properties"
+				],
+				"sourceMaps": "inline",
+				"retainLines": true
+			},
+			"production": {
+				"presets": [
+					"@babel/preset-env"
+				],
+				"plugins": [
+					"@babel/plugin-proposal-optional-chaining",
+					"@babel/plugin-transform-runtime",
+					"@babel/plugin-transform-modules-commonjs",
+					"@babel/plugin-proposal-class-properties"
+				]
+			},
+			"development": {
+				"presets": [
+					"@babel/preset-env"
+				],
+				"plugins": [
+					"@babel/plugin-proposal-optional-chaining",
+					"@babel/plugin-transform-runtime",
+					"@babel/plugin-transform-modules-commonjs",
+					"@babel/plugin-proposal-class-properties"
+				],
+				"sourceMaps": "inline",
+				"retainLines": true
+			}
+		}
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/WickrInc/wickrio-calendar-bot"
+	},
+	"keywords": [
+		"wickr",
+		"wickrio",
+		"wickrbot",
+		"bot",
+		"bots",
+		"secure",
+		"messaging",
+		"api"
+	],
+	"database": true
 }
