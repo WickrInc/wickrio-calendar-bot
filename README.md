@@ -28,3 +28,23 @@ The WickrIO Google Calendar Bot allows you to create, modify and list Google Cal
 - DATABASE_ENCRYPTION_KEY - Choose a 16-character(minimum) string key to derive the crypto key from in order to encrypt and decrypt the user database of this bot. This must be specified, there is no default. NOTE: be careful not to change if reconfiguring the bot or else the user database won't be accessible.
 - BOT_CLIENT_SERVER - The server address of the machine you are running your integration on(without the https://)
 - BOT_CLIENT_SERVER - The port you assigned to the docker container when you ran it, for example if you ran it with this command: `docker run -v /opt/WickrIO:/opt/WickrIO -p 5001:4001 -d --restart=always -ti wickr/bot-cloud:latest`, then the port would be 4001.
+
+# License
+
+This software is distributed under the [Apache License, version 2.0](https://www.apache.org/licenses/LICENSE-2.0.html)
+
+```
+   Copyright 2021 Wickr, Inc.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+```
