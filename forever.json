@@ -1,0 +1,10 @@
+{
+  "uid": "wickrio-calendar-bot",
+  "append": true,
+  "watch": false,
+  "script": "./calendar_bot.js",
+  "sourceDir": "",
+  "logFile": "",
+  "outFile": "",
+  "errFile": ""
+}
