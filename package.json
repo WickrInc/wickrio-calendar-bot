@@ -17,8 +17,8 @@
   },
   "scripts": {
     "start": "forever start -m 5 ./forever.json",
-    "stop": "forever stopall",
-    "restart": "forever restartall"
+    "stop": "forever stop wickrio-calendar-bot",
+    "restart": "forever restart wickrio-calendar-bot"
   },
   "repository": {
     "type": "git",
