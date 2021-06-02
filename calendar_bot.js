@@ -77,15 +77,26 @@ process.on('uncaughtException', exitHandler.bind(null, {
 }));
 
 
+bot.processesJsonToProcessEnv()
 
 var tokens, credentials, bot_username, bot_client_port, bot_client_server, client_id, project_id, client_secret;
 var tokens = JSON.parse(process.env.tokens);
 
 return new Promise(async (resolve, reject) => {
+  bot.processesJsonToProcessEnv()
   try {
     var status;
     if (process.argv[2] === undefined) {
-      bot_username = tokens.BOT_USERNAME.value;
+      if (tokens.BOT_USERNAME !== undefined) {
+        bot_username = tokens.BOT_USERNAME.value;
+      } else if (tokens.WICKRIO_BOT_NAME !== undefined) {
+        bot_username = tokens.WICKRIO_BOT_NAME.value
+      } else {
+        exitHandler(null, {
+          exit: true,
+          reason: 'Client username not found!'
+        });
+      }
       status = await bot.start(bot_username)
       resolve(status);
     } else {
