@@ -1,6 +1,6 @@
 {
   "name": "wickrio-calendar-bot",
-  "version": "5.82.2",
+  "version": "5.113.1",
   "description": "WickrIO Calendar Bot allows you to create, modify and list Google Calendar events in addition to setting in-Wickr reminder notifications before events",
   "main": "calendar_bot.js",
   "dependencies": {
